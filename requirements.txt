@@ -9,3 +9,4 @@ emoji>=2.11.0
 safetensors>=0.4.3
 sentencepiece>=0.2.0
 gdown>=5.1.0
+torchvision
