@@ -123,17 +123,91 @@ def load_model(model_dir: str):
     return tok, mdl, T
 
 # ──────────────────────────────────────────────────────────────
-# 3.  CONSTANTS
+# 3.  CONSTANTS — label map read from config.json at runtime
 # ──────────────────────────────────────────────────────────────
-DEVICE   = "cpu"   # Streamlit Cloud has no GPU — force CPU
-MAX_LEN  = 128
 
-ID2LABEL = {0: "Skeptic/Denial", 1: "Neutral", 2: "Pro-Climate", 3: "News/Factual"}
-COLORS   = {0: "#E24B4A", 1: "#888780", 2: "#1D9E75", 3: "#378ADD"}
-ICONS    = {0: "❄️", 1: "😐", 2: "🌿", 3: "📰"}
+# Raw training labels were -1, 0, 1, 2
+# HuggingFace Trainer remaps them to 0-indexed integers
+# The TRUE mapping depends on what was saved in config.json
 
-# Solid hex fill colors for Plotly stacked area (no opacity tricks)
-FILL_COLORS = {0: "#E24B4A", 1: "#888780", 2: "#1D9E75", 3: "#378ADD"}
+# Fallback — override below once you confirm config.json content
+# This mapping matches: {0:Skeptic, 1:Neutral, 2:Pro-Climate, 3:News}
+# which is what happens when sorted([-1,0,1,2]) → [0,1,2,3]
+_FALLBACK_ID2LABEL = {
+    0: "Skeptic/Denial",
+    1: "Neutral",
+    2: "Pro-Climate",
+    3: "News/Factual",
+}
+
+def get_id2label(model_dir: str) -> dict:
+    """Read id2label from saved config.json — truth source for label mapping."""
+    config_path = os.path.join(model_dir, "config.json")
+    if not os.path.exists(config_path):
+        return _FALLBACK_ID2LABEL
+    with open(config_path) as f:
+        cfg = json.load(f)
+    raw = cfg.get("id2label", {})
+    if not raw:
+        return _FALLBACK_ID2LABEL
+
+    # Map from whatever is in config to display names
+    # Handle both {"0":"LABEL_0"} and {"0":"Pro-Climate"} formats
+    label_str_to_display = {
+        # HuggingFace auto-names
+        "LABEL_0": "Skeptic/Denial",
+        "LABEL_1": "Neutral",
+        "LABEL_2": "Pro-Climate",
+        "LABEL_3": "News/Factual",
+        # If your training saved numeric strings as values
+        "-1": "Skeptic/Denial",
+        "0":  "Neutral",
+        "1":  "Pro-Climate",
+        "2":  "News/Factual",
+        # If already saved as display names — pass through
+        "Skeptic/Denial": "Skeptic/Denial",
+        "Neutral":        "Neutral",
+        "Pro-Climate":    "Pro-Climate",
+        "News/Factual":   "News/Factual",
+    }
+    result = {}
+    for k, v in raw.items():
+        display = label_str_to_display.get(str(v), str(v))
+        result[int(k)] = display
+    return result
+
+
+@st.cache_resource(show_spinner=False)
+def load_model(model_dir: str):
+    tok = AutoTokenizer.from_pretrained(
+        model_dir,
+        use_fast=False,
+        normalization=True,
+    )
+    mdl = AutoModelForSequenceClassification.from_pretrained(
+        model_dir,
+        ignore_mismatched_sizes=False,
+        torch_dtype=torch.float32,
+    )
+    mdl.eval()
+
+    T = 1.0
+    calib_path = os.path.join(model_dir, "calibration.json")
+    if os.path.exists(calib_path):
+        with open(calib_path) as f:
+            T = json.load(f).get("temperature", 1.0)
+
+    # Read label map from config — single source of truth
+    id2label = get_id2label(model_dir)
+
+    return tok, mdl, T, id2label
+
+
+# ── In sidebar, unpack 4 values now ───────────────────────────
+# Change this line:
+#   tok, mdl, TEMP = load_model(LOCAL_MODEL_DIR)
+# To:
+#   tok, mdl, TEMP, ID2LABEL = load_model(LOCAL_MODEL_DIR)
 
 # ──────────────────────────────────────────────────────────────
 # 4.  TWEET CLEANER
