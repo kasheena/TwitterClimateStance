@@ -43,7 +43,7 @@ st.set_page_config(
 #     URL looks like: https://drive.google.com/drive/folders/1ABC...XYZ
 #     The folder ID is the last part:                         1ABC...XYZ
 # ──────────────────────────────────────────────────────────────
-DRIVE_FOLDER_ID = "My Drive/MSDSP_453_NLP_Project/Data_Models/bertweet_climate_final"   # ← paste your folder ID
+DRIVE_FOLDER_ID = "1HBeGMNUA82YXlYwFX1xXLRRviiOk--_X"   # ← paste your folder ID
 
 # Files that must be downloaded from Drive
 MODEL_FILES = [
@@ -716,7 +716,7 @@ elif page == "📡  Temporal Dashboard":
     tot  = pro + skep + news + neut
     pro /= tot; skep /= tot; news /= tot; neut /= tot
 
-    fig_t = go.Figure()
+fig_t = go.Figure()
     for label_name, vals, col_hex in [
         ("Pro-Climate",    pro,  "#1D9E75"),
         ("News/Factual",   news, "#378ADD"),
@@ -724,37 +724,49 @@ elif page == "📡  Temporal Dashboard":
         ("Skeptic/Denial", skep, "#E24B4A"),
     ]:
         fig_t.add_trace(go.Scatter(
-            x=list(months),
+            x=list(months.strftime("%Y-%m-%d")),   # ← string dates, not Timestamps
             y=(vals * 100).tolist(),
             name=label_name,
             mode="lines",
             line=dict(color=col_hex, width=2.5),
             stackgroup="one",
-            # ── FIX: use only valid solid hex, not appended opacity ──
-            fillcolor=col_hex,
+            fillcolor=col_hex,                     # ← plain hex only, no opacity suffix
         ))
 
-    for dt, label_txt, col_hex in [
-        (pd.Timestamp("2015-12-01"), "Paris Agreement", "#1D9E75"),
-        (pd.Timestamp("2017-06-01"), "US Withdrawal",   "#E24B4A"),
+    # ── Event lines using shapes (more reliable than add_vline with timestamps) ──
+    for dt_str, label_txt, col_hex in [
+        ("2015-12-01", "Paris Agreement", "#1D9E75"),
+        ("2017-06-01", "US Withdrawal",   "#E24B4A"),
     ]:
-        fig_t.add_vline(x=dt.timestamp() * 1000,
-                        line=dict(color=col_hex, dash="dash", width=1.5))
-        fig_t.add_annotation(
-            x=dt, y=98, text=f"<b>{label_txt}</b>",
-            showarrow=False, font=dict(color=col_hex, size=11),
+        fig_t.add_shape(
+            type="line",
+            x0=dt_str, x1=dt_str,
+            y0=0, y1=100,
             xref="x", yref="y",
+            line=dict(color=col_hex, dash="dash", width=1.5),
+        )
+        fig_t.add_annotation(
+            x=dt_str, y=96,
+            text=f"<b>{label_txt}</b>",
+            showarrow=False,
+            font=dict(color=col_hex, size=11),
+            xref="x", yref="y",
+            bgcolor="#0d1117",
+            borderpad=3,
         )
 
     fig_t.update_layout(
         **PLOT_BASE,
-        title=dict(text="Monthly stance proportions — Snowflake ID decoded",
-                   font=dict(color="#e6edf3", size=14)),
-        xaxis=dict(color="#8b949e", showgrid=False),
+        title=dict(
+            text="Monthly stance proportions — Snowflake ID decoded",
+            font=dict(color="#e6edf3", size=14),
+        ),
+        xaxis=dict(color="#8b949e", showgrid=False, type="category",
+                   tickangle=-45, nticks=12),
         yaxis=dict(color="#8b949e", gridcolor="#21262d",
                    ticksuffix="%", range=[0, 110]),
-        legend=dict(font=dict(color="#8b949e"), orientation="h", y=-0.18),
-        height=420,
+        legend=dict(font=dict(color="#8b949e"), orientation="h", y=-0.25),
+        height=440,
     )
     st.plotly_chart(fig_t, use_container_width=True)
 
