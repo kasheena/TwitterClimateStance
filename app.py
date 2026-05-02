@@ -716,59 +716,59 @@ elif page == "📡  Temporal Dashboard":
     tot  = pro + skep + news + neut
     pro /= tot; skep /= tot; news /= tot; neut /= tot
 
-fig_t = go.Figure()
-    for label_name, vals, col_hex in [
-        ("Pro-Climate",    pro,  "#1D9E75"),
-        ("News/Factual",   news, "#378ADD"),
-        ("Neutral",        neut, "#888780"),
-        ("Skeptic/Denial", skep, "#E24B4A"),
-    ]:
-        fig_t.add_trace(go.Scatter(
-            x=list(months.strftime("%Y-%m-%d")),   # ← string dates, not Timestamps
-            y=(vals * 100).tolist(),
-            name=label_name,
-            mode="lines",
-            line=dict(color=col_hex, width=2.5),
-            stackgroup="one",
-            fillcolor=col_hex,                     # ← plain hex only, no opacity suffix
-        ))
-
-    # ── Event lines using shapes (more reliable than add_vline with timestamps) ──
-    for dt_str, label_txt, col_hex in [
-        ("2015-12-01", "Paris Agreement", "#1D9E75"),
-        ("2017-06-01", "US Withdrawal",   "#E24B4A"),
-    ]:
-        fig_t.add_shape(
-            type="line",
-            x0=dt_str, x1=dt_str,
-            y0=0, y1=100,
-            xref="x", yref="y",
-            line=dict(color=col_hex, dash="dash", width=1.5),
+    fig_t = go.Figure()
+        for label_name, vals, col_hex in [
+            ("Pro-Climate",    pro,  "#1D9E75"),
+            ("News/Factual",   news, "#378ADD"),
+            ("Neutral",        neut, "#888780"),
+            ("Skeptic/Denial", skep, "#E24B4A"),
+        ]:
+            fig_t.add_trace(go.Scatter(
+                x=list(months.strftime("%Y-%m-%d")),   # ← string dates, not Timestamps
+                y=(vals * 100).tolist(),
+                name=label_name,
+                mode="lines",
+                line=dict(color=col_hex, width=2.5),
+                stackgroup="one",
+                fillcolor=col_hex,                     # ← plain hex only, no opacity suffix
+            ))
+    
+        # ── Event lines using shapes (more reliable than add_vline with timestamps) ──
+        for dt_str, label_txt, col_hex in [
+            ("2015-12-01", "Paris Agreement", "#1D9E75"),
+            ("2017-06-01", "US Withdrawal",   "#E24B4A"),
+        ]:
+            fig_t.add_shape(
+                type="line",
+                x0=dt_str, x1=dt_str,
+                y0=0, y1=100,
+                xref="x", yref="y",
+                line=dict(color=col_hex, dash="dash", width=1.5),
+            )
+            fig_t.add_annotation(
+                x=dt_str, y=96,
+                text=f"<b>{label_txt}</b>",
+                showarrow=False,
+                font=dict(color=col_hex, size=11),
+                xref="x", yref="y",
+                bgcolor="#0d1117",
+                borderpad=3,
+            )
+    
+        fig_t.update_layout(
+            **PLOT_BASE,
+            title=dict(
+                text="Monthly stance proportions — Snowflake ID decoded",
+                font=dict(color="#e6edf3", size=14),
+            ),
+            xaxis=dict(color="#8b949e", showgrid=False, type="category",
+                       tickangle=-45, nticks=12),
+            yaxis=dict(color="#8b949e", gridcolor="#21262d",
+                       ticksuffix="%", range=[0, 110]),
+            legend=dict(font=dict(color="#8b949e"), orientation="h", y=-0.25),
+            height=440,
         )
-        fig_t.add_annotation(
-            x=dt_str, y=96,
-            text=f"<b>{label_txt}</b>",
-            showarrow=False,
-            font=dict(color=col_hex, size=11),
-            xref="x", yref="y",
-            bgcolor="#0d1117",
-            borderpad=3,
-        )
-
-    fig_t.update_layout(
-        **PLOT_BASE,
-        title=dict(
-            text="Monthly stance proportions — Snowflake ID decoded",
-            font=dict(color="#e6edf3", size=14),
-        ),
-        xaxis=dict(color="#8b949e", showgrid=False, type="category",
-                   tickangle=-45, nticks=12),
-        yaxis=dict(color="#8b949e", gridcolor="#21262d",
-                   ticksuffix="%", range=[0, 110]),
-        legend=dict(font=dict(color="#8b949e"), orientation="h", y=-0.25),
-        height=440,
-    )
-    st.plotly_chart(fig_t, use_container_width=True)
+        st.plotly_chart(fig_t, use_container_width=True)
 
     st.markdown("""<div class='card' style='border-left:3px solid #1D9E75'>
         <b style='color:#e6edf3'>Snowflake ID decoding</b>
