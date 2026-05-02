@@ -43,7 +43,7 @@ st.set_page_config(
 #     URL looks like: https://drive.google.com/drive/folders/1ABC...XYZ
 #     The folder ID is the last part:                         1ABC...XYZ
 # ──────────────────────────────────────────────────────────────
-DRIVE_FOLDER_ID = "YOUR_FOLDER_ID_HERE"   # ← paste your folder ID
+DRIVE_FOLDER_ID = "My Drive/MSDSP_453_NLP_Project/Data/bertweet_climate_final"   # ← paste your folder ID
 
 # Files that must be downloaded from Drive
 MODEL_FILES = [
